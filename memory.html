@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memory — Shai Games</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0000;--bg2:#110000;--card:#140000;--red:#cc0000;--red2:#ff2222;--border:rgba(204,0,0,.18);--border2:rgba(204,0,0,.38);--text:#f0dada;--dim:#8a5555;--gold:#f5c518;--green:#1aaa44;}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 35% at 50% 0%,rgba(160,0,0,.07),transparent 65%);pointer-events:none;z-index:0;}
+::-webkit-scrollbar{width:4px;} ::-webkit-scrollbar-track{background:#0a0000;} ::-webkit-scrollbar-thumb{background:var(--red);}
+header,header *{position:relative;z-index:100;}
+
+/* HEADER */
+header{display:flex;align-items:center;justify-content:space-between;padding:0 1.3rem;height:52px;
+  background:rgba(8,0,0,.97);border-bottom:1px solid var(--border2);position:sticky;top:0;z-index:100;backdrop-filter:blur(12px);}
+header::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:1px;
+  background:linear-gradient(to right,transparent,var(--red),var(--red2),var(--red),transparent);}
+.sg-logo{display:flex;align-items:center;gap:.45rem;font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:.05em;color:#fff;cursor:pointer;}
+.sg-logo svg{width:28px;height:33px;filter:drop-shadow(0 0 5px var(--red));flex-shrink:0;}
+.sg-logo span{color:var(--red2);}
+.sg-title{font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:.08em;color:var(--red2);}
+.btn{font-family:'Orbitron',monospace;font-size:.52rem;font-weight:700;padding:.34rem .82rem;border:none;border-radius:4px;cursor:pointer;transition:all .18s;text-transform:uppercase;}
+.btn-outline{background:transparent;color:var(--red2);border:1px solid var(--border2);}
+.btn-outline:hover{background:rgba(180,0,0,.15);border-color:var(--red);}
+.btn-red{background:var(--red);color:#fff;border:1px solid var(--red);}
+.btn-red:hover{background:var(--red2);box-shadow:0 0 14px rgba(200,0,0,.4);}
+.btn-green{background:var(--green);color:#fff;border:1px solid var(--green);}
+.btn-green:hover{background:#22cc55;}
+
+/* HUD */
+.hud{display:flex;align-items:center;justify-content:space-around;flex-wrap:wrap;
+  padding:.3rem .8rem;background:rgba(8,0,0,.92);border-bottom:1px solid var(--border);}
+.hud-item{text-align:center;padding:.1rem .4rem;}
+.hud-lbl{font-size:.44rem;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);}
+.hud-val{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:var(--red2);letter-spacing:.04em;line-height:1.1;}
+.hud-val.gold{color:var(--gold);} .hud-val.green{color:var(--green);}
+
+/* OVERLAYS */
+.ov{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.88);z-index:200;}
+.ov.off{display:none;}
+.ob{background:#0e0000;border:1px solid var(--border2);border-radius:12px;padding:1.8rem 2.2rem;text-align:center;max-width:400px;width:92%;box-shadow:0 0 50px rgba(140,0,0,.2);}
+.ob::before{content:'';display:block;width:44px;height:2px;background:linear-gradient(to right,transparent,var(--red2),transparent);margin:0 auto .8rem;}
+.ob h1{font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:.08em;color:var(--red2);margin-bottom:.15rem;}
+.ob h2{font-family:'Orbitron',monospace;font-size:.58rem;color:var(--dim);margin-bottom:.8rem;}
+.ob p{font-size:.8rem;color:var(--dim);line-height:1.55;margin-bottom:.9rem;}
+.ob .big{font-family:'Bebas Neue',sans-serif;font-size:2.8rem;color:var(--gold);margin:.25rem 0 .5rem;letter-spacing:.05em;}
+.brow{display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;margin-top:.5rem;}
+.keys{display:flex;flex-wrap:wrap;gap:.28rem;justify-content:center;margin-top:.6rem;font-size:.66rem;color:var(--dim);}
+.key{background:rgba(180,0,0,.1);border:1px solid var(--border2);border-radius:3px;padding:.05rem .34rem;font-size:.57rem;color:var(--red2);}
+
+/* CANVAS WRAP */
+.canvas-wrap{display:flex;flex-direction:column;align-items:center;padding:.7rem 1rem 1.2rem;}
+canvas{border:1px solid var(--border2);border-radius:4px 4px 0 0;display:block;max-width:98vw;box-shadow:0 0 25px rgba(120,0,0,.15);}
+.bottom-btns{max-width:98vw;display:flex;gap:.6rem;justify-content:center;padding:.6rem;background:rgba(10,0,0,.8);border:1px solid var(--border);border-radius:0 0 4px 4px;}
+.cheat-bar{background:rgba(180,0,0,.08);border:1px solid var(--border2);border-radius:5px;padding:.36rem 1rem;font-size:.7rem;color:var(--red2);text-align:center;margin:.35rem 0;display:none;font-family:'Orbitron',monospace;max-width:98vw;}
+.keys-hint{font-size:.67rem;color:var(--dim);text-align:center;padding:.3rem;max-width:98vw;}
+
+/* memory grid */
+.card{aspect-ratio:1.2;background:#140000;border:1px solid var(--border);border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.8rem;transition:all .2s;user-select:none;}
+.card:hover:not(.flipped):not(.matched){border-color:var(--red2);background:rgba(180,0,0,.08);}
+.card.flipped{background:rgba(180,0,0,.1);border-color:var(--red2);}
+.card.matched{background:rgba(26,170,68,.1);border-color:var(--green);cursor:default;}
+.card-back{font-family:'Orbitron',monospace;font-size:1rem;color:rgba(204,0,0,.3);}
+.time-danger{color:var(--red2)!important;}
+
+/* reaction */
+.arena{width:100%;height:320px;border-radius:8px;border:2px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:background .2s;user-select:none;background:#140000;}
+.arena.waiting{background:#200008;border-color:var(--red);}
+.arena.go{background:#001a08;border-color:var(--green);}
+.arena-text{font-family:'Bebas Neue',sans-serif;font-size:2.5rem;letter-spacing:.06em;color:var(--red2);}
+.arena.go .arena-text{color:var(--green);text-shadow:0 0 25px rgba(26,170,68,.5);}
+.arena-sub{font-size:.88rem;color:var(--dim);margin-top:.4rem;}
+.result-chip{background:#140000;border:1px solid var(--border);border-radius:6px;padding:.45rem .9rem;text-align:center;}
+.result-chip .val{font-family:'Bebas Neue',sans-serif;font-size:1.3rem;letter-spacing:.04em;}
+.result-chip .lbl{font-size:.6rem;color:var(--dim);text-transform:uppercase;}
+.fast{color:var(--green);}.ok{color:var(--gold);}.slow{color:var(--red2);}
+.prog-dot{width:13px;height:13px;border-radius:50%;background:rgba(180,0,0,.15);border:1px solid var(--border2);transition:all .2s;}
+.prog-dot.done{background:var(--red);border-color:var(--red2);}
+.prog-dot.active{background:var(--red2);border-color:var(--red2);box-shadow:0 0 8px var(--red);}
+</style>
+</head>
+<body>
+<header>
+  <div class="sg-logo" onclick="goHome()"><svg viewBox="0 0 30 35" fill="none"><path d="M15 2C8.4 2 3 7.4 3 14V32C3 32 5.5 29.5 8 32C10.5 34.5 10.5 32 15 32C19.5 32 19.5 34.5 22 32C24.5 29.5 27 32 27 32V14C27 7.4 21.6 2 15 2Z" fill="#cc0000" fill-opacity=".85" stroke="#ff3333" stroke-width=".8"/><ellipse cx="11" cy="13" rx="2.5" ry="3.2" fill="white"/><ellipse cx="19" cy="13" rx="2.5" ry="3.2" fill="white"/><ellipse cx="11.6" cy="14" rx="1.3" ry="1.8" fill="#0a0000"/><ellipse cx="19.6" cy="14" rx="1.3" ry="1.8" fill="#0a0000"/></svg>Shai<span>Games</span></div>
+  <div style="font-family:'Orbitron',monospace;font-size:.82rem;color:var(--blue2);">🃏 MEMORY</div>
+  <button class="btn btn-outline" onclick="goHome()">← Home</button>
+</header>
+
+<div class="hud">
+  <div class="hud-item"><div class="hud-lbl">Score</div><div class="hud-val" id="hScore">0</div></div>
+  <div class="hud-item"><div class="hud-lbl">Paare</div><div class="hud-val" id="hPairs">0/8</div></div>
+  <div class="hud-item"><div class="hud-lbl">Züge</div><div class="hud-val" id="hMoves">0</div></div>
+  <div class="hud-item"><div class="hud-lbl">Zeit</div><div class="hud-val" id="hTime">60</div></div>
+</div>
+<div class="cheat-bar" id="cheatBar">⚡ CHEAT: <span id="cheatName"></span></div>
+<div class="grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:min(680px,98vw);padding:.8rem;background:rgba(10,0,0,.8);border:1px solid rgba(204,0,0,.18);border-radius:6px;margin:.4rem 0;" id="grid"></div>
+<div class="brow">
+  <button class="btn btn-green" id="startBtn" onclick="startGame()">▶ START</button>
+  <button class="btn btn-outline" onclick="goHome()">🏠 Home</button>
+</div>
+
+<script>
+const user=JSON.parse(localStorage.getItem('bg_currentUser')||'null');
+const cheat=JSON.parse(localStorage.getItem('bg_activeCheat')||'null');
+if(cheat){document.getElementById('cheatBar').style.display='block';document.getElementById('cheatName').textContent=cheat.name;}
+
+function goHome(){if(timerI) clearInterval(timerI);window.location.href='index.html';}
+
+let cards=[],flipped=[],matched=0,moves=0,score=0,timeLeft=60,timerI=null,running=false,busy=false;
+
+const EMOJIS=['🎮','⚡','🎯','🔥','💎','🌟','🚀','👾'];
+
+function startGame(){
+  if(timerI) clearInterval(timerI);
+  const pairs=[...EMOJIS,...EMOJIS].sort(()=>Math.random()-.5);
+  cards=pairs.map((e,i)=>({id:i,emoji:e,flipped:false,matched:false}));
+  flipped=[];matched=0;moves=0;score=0;running=true;busy=false;
+  const extraTime=cheat&&cheat.code==='MORETIME';
+  timeLeft=extraTime?120:60;
+  document.getElementById('startBtn').textContent='🔄 Neustart';
+  renderGrid();
+  timerI=setInterval(()=>{
+    if(!running) return;
+    timeLeft--;
+    const el=document.getElementById('hTime');
+    el.textContent=timeLeft;
+    if(timeLeft<=10) el.classList.add('time-danger');
+    else el.classList.remove('time-danger');
+    if(timeLeft<=0){clearInterval(timerI);running=false;endGame('⏱ ZEIT!');}
+  },1000);
+}
+
+function renderGrid(){
+  const g=document.getElementById('grid');g.innerHTML='';
+  cards.forEach((c,i)=>{
+    const div=document.createElement('div');
+    div.className='card'+(c.flipped||c.matched?' flipped':'')+' '+(c.matched?'matched':'');
+    if(c.flipped||c.matched) div.innerHTML=`<span class="card-inner">${c.emoji}</span>`;
+    else div.innerHTML=`<span class="card-back">?</span>`;
+    div.onclick=()=>clickCard(i);
+    g.appendChild(div);
+  });
+  document.getElementById('hMoves').textContent=moves;
+  document.getElementById('hPairs').textContent=matched+'/8';
+}
+
+function clickCard(i){
+  if(!running||busy) return;
+  const c=cards[i];if(c.flipped||c.matched) return;
+  c.flipped=true;flipped.push(c);renderGrid();
+  if(flipped.length===2){
+    moves++;busy=true;
+    if(flipped[0].emoji===flipped[1].emoji){
+      flipped[0].matched=true;flipped[1].matched=true;matched++;flipped=[];busy=false;
+      if(matched===8){clearInterval(timerI);running=false;const mult=cheat&&cheat.name.includes('x2')?2:1;score=Math.round((10000/Math.max(1,moves)/Math.max(0.1,(60-timeLeft+1)))*1000)*mult;renderGrid();setTimeout(()=>endGame('🃏 FERTIG!'),300);}
+      else renderGrid();
+    } else {
+      setTimeout(()=>{flipped.forEach(x=>x.flipped=false);flipped=[];busy=false;renderGrid();},850);
+    }
+  }
+}
+
+function endGame(title){
+  document.getElementById('hScore').textContent=score;
+  localStorage.setItem('bg_lastResult',JSON.stringify({game:'memory',score,title,cheat:!!cheat}));
+  if(user){localStorage.setItem('bg_sessionUser',JSON.stringify(user));localStorage.setItem('sg_sessionUser',JSON.stringify(user));}
+  setTimeout(()=>window.location.href='index.html',400);
+}
+</script>
+</body>
+</html>

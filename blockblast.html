@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Block Blast — Shai Games</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0000;--card:#140000;--bg2:#110000;--bg3:#180000;--red:#cc0000;--red2:#ff2222;--red3:#ff6666;--border:rgba(204,0,0,.2);--text:#f0dada;--dim:#8a5555;--gold:#f5c518;--red:#e03030;--green:#22bb55;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Rajdhani',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;}
+header{width:100%;display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;height:52px;background:rgba(8,0,0,.97);border-bottom:1px solid rgba(204,0,0,.38);}
+.logo{font-family:'Orbitron',monospace;font-size:.95rem;font-weight:900;color:#fff;cursor:pointer;}
+.logo em{font-style:normal;color:var(--blue2);}
+.btn{font-family:'Orbitron',monospace;font-size:.58rem;font-weight:700;padding:.38rem .9rem;border:none;border-radius:5px;cursor:pointer;transition:all .18s;text-transform:uppercase;}
+.btn-outline{background:transparent;color:var(--blue2);border:2px solid var(--blue);}
+.btn-outline:hover{background:var(--blue);color:#fff;}
+.btn-red{background:var(--blue);color:#fff;border:2px solid var(--blue);}
+.btn-green{background:var(--green);color:#fff;border:2px solid var(--green);}
+.btn-red{background:var(--red);color:#fff;border:2px solid var(--red);}
+
+.game-layout{display:flex;gap:1.2rem;align-items:flex-start;padding:1.2rem;flex-wrap:wrap;justify-content:center;}
+
+/* HUD sidebar */
+.sidebar{width:160px;display:flex;flex-direction:column;gap:.8rem;}
+.hud-card{background:var(--card,#140000);border:1px solid var(--border);border-radius:10px;padding:.9rem;text-align:center;}
+.hud-lbl{font-size:.55rem;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);margin-bottom:.2rem;}
+.hud-val{font-family:'Orbitron',monospace;font-size:1.3rem;color:var(--blue2);font-weight:700;}
+.cheat-bar{background:rgba(26,111,255,.08);border:1px solid rgba(26,111,255,.3);border-radius:8px;padding:.5rem;font-size:.7rem;color:var(--blue2);text-align:center;display:none;}
+
+/* GRID */
+.grid-wrap{display:flex;flex-direction:column;align-items:center;gap:.8rem;}
+#bb-grid{
+  display:grid;grid-template-columns:repeat(8,52px);grid-template-rows:repeat(8,52px);
+  gap:4px;background:rgba(20,0,0,.8);padding:8px;border-radius:12px;border:1px solid var(--border);
+}
+.cell{
+  width:52px;height:52px;border-radius:7px;
+  background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.05);
+  cursor:pointer;transition:all .12s;display:flex;align-items:center;justify-content:center;
+  position:relative;
+}
+.cell.filled{border-width:1.5px;}
+.cell:hover:not(.filled){background:rgba(26,111,255,.06);border-color:rgba(26,111,255,.3);}
+.cell.hl{background:rgba(77,159,255,.2)!important;border-color:var(--blue2)!important;transform:scale(1.05);}
+.cell.bomb-hl{background:rgba(224,48,48,.2)!important;border-color:var(--red)!important;}
+
+/* SHOP */
+.shop{display:flex;gap:.7rem;justify-content:center;flex-wrap:wrap;}
+.shop-item{
+  background:var(--card,#140000);border:1px solid var(--border);border-radius:10px;
+  padding:.65rem .9rem;cursor:pointer;transition:all .15s;text-align:center;min-width:90px;
+}
+.shop-item:hover{border-color:var(--blue);background:rgba(26,111,255,.06);}
+.shop-item.selected{border-color:var(--blue2);background:rgba(26,111,255,.1);}
+.shop-item.cant-afford{opacity:.4;pointer-events:none;}
+.shop-icon{font-size:1.5rem;margin-bottom:.15rem;}
+.shop-name{font-family:'Orbitron',monospace;font-size:.52rem;color:var(--blue2);}
+.shop-cost{font-size:.66rem;color:var(--gold);margin-top:.1rem;}
+
+.msg-bar{
+  font-family:'Orbitron',monospace;font-size:.65rem;color:var(--blue2);
+  background:rgba(26,111,255,.08);border:1px solid rgba(26,111,255,.2);
+  border-radius:8px;padding:.4rem 1rem;text-align:center;min-width:300px;
+}
+.btns{display:flex;gap:.6rem;justify-content:center;}
+
+/* COMBO */
+.combo{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  font-family:'Orbitron',monospace;font-size:2.5rem;color:var(--gold);
+  text-shadow:0 0 20px rgba(245,197,24,.6);pointer-events:none;
+  animation:comboPop .8s ease forwards;opacity:0;z-index:50;
+}
+@keyframes comboPop{0%{opacity:1;transform:translate(-50%,-50%) scale(.5);}40%{opacity:1;transform:translate(-50%,-60%) scale(1.2);}100%{opacity:0;transform:translate(-50%,-80%) scale(.9);}}
+</style>
+</head>
+<body>
+<header>
+  <div class="sg-logo" onclick="goHome()"><svg viewBox="0 0 30 35" fill="none"><path d="M15 2C8.4 2 3 7.4 3 14V32C3 32 5.5 29.5 8 32C10.5 34.5 10.5 32 15 32C19.5 32 19.5 34.5 22 32C24.5 29.5 27 32 27 32V14C27 7.4 21.6 2 15 2Z" fill="#cc0000" fill-opacity=".85" stroke="#ff3333" stroke-width=".8"/><ellipse cx="11" cy="13" rx="2.5" ry="3.2" fill="white"/><ellipse cx="19" cy="13" rx="2.5" ry="3.2" fill="white"/><ellipse cx="11.6" cy="14" rx="1.3" ry="1.8" fill="#0a0000"/><ellipse cx="19.6" cy="14" rx="1.3" ry="1.8" fill="#0a0000"/></svg>Shai<span>Games</span></div>
+  <div style="font-family:'Orbitron',monospace;font-size:.82rem;color:var(--blue2);">💣 BLOCK BLAST</div>
+  <button class="btn btn-outline" onclick="goHome()">← Home</button>
+</header>
+
+<div class="game-layout">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="hud-card"><div class="hud-lbl">Score</div><div class="hud-val" id="hScore">0</div></div>
+    <div class="hud-card"><div class="hud-lbl">Level</div><div class="hud-val" id="hLevel">1</div></div>
+    <div class="hud-card"><div class="hud-lbl">Moves</div><div class="hud-val" id="hMoves">0</div></div>
+    <div class="cheat-bar" id="cheatBar">⚡<br><span id="cheatName"></span></div>
+    <button class="btn btn-green" id="startBtn" onclick="startGame()" style="padding:.55rem;">▶ START</button>
+    <button class="btn btn-outline" onclick="goHome()" style="padding:.55rem;">🏠 Home</button>
+  </div>
+
+  <!-- Main -->
+  <div class="grid-wrap">
+    <div id="bb-grid"></div>
+    <div class="msg-bar" id="msgBar">Drücke START um zu spielen!</div>
+    <div class="shop" id="shop"></div>
+  </div>
+</div>
+
+<script>
+const ROWS=8,COLS=8;
+// 8 vivid distinct colors for blocks
+const COLORS=[
+  '#e03030', // red
+  '#ff7700', // orange
+  '#f5c518', // gold/yellow
+  '#22bb55', // green
+  '#1a6fff', // blue
+  '#aa44ff', // purple
+  '#ff1faa', // pink/magenta
+  '#00ccdd', // cyan
+];
+const COLOR_NAMES=['Rot','Orange','Gold','Grün','Blau','Lila','Pink','Cyan'];
+const user=JSON.parse(localStorage.getItem('bg_currentUser')||'null');
+const cheat=JSON.parse(localStorage.getItem('bg_activeCheat')||'null');
+if(cheat){document.getElementById('cheatBar').style.display='block';document.getElementById('cheatName').textContent=cheat.name;}
+function goHome(){window.location.href='index.html';}
+document.addEventListener('keydown',e=>{if(e.code==='Escape')goHome();});
+
+let grid=[],score=0,level=1,moves=0,running=false,selected=null;
+
+const ITEMS=[
+  {id:'bomb',icon:'💣',name:'BOMBE',desc:'3×3 löschen',cost:200},
+  {id:'row',icon:'↔',name:'REIHE',desc:'Zeile löschen',cost:300},
+  {id:'col',icon:'↕',name:'SPALTE',desc:'Spalte löschen',cost:250},
+  {id:'shuffle',icon:'🔀',name:'SHUFFLE',desc:'Neu mischen',cost:150},
+];
+
+function startGame(){
+  grid=Array.from({length:ROWS},()=>Array(COLS).fill(null));
+  // Fill ~65%
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++)
+    if(Math.random()<.65) grid[r][c]=Math.floor(Math.random()*COLORS.length);
+  score=0;level=1;moves=0;running=true;selected=null;
+  document.getElementById('startBtn').textContent='🔄 Neustart';
+  updateHUD();renderGrid();renderShop();setMsg('Klicke auf gleiche Blöcke (mind. 2 verbunden)!');
+}
+
+function renderGrid(){
+  const g=document.getElementById('bb-grid');g.innerHTML='';
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    const cell=document.createElement('div');
+    cell.className='cell';cell.dataset.r=r;cell.dataset.c=c;
+    const v=grid[r][c];
+    if(v!==null){
+      cell.classList.add('filled');
+      cell.style.background=COLORS[v]+'cc';
+      cell.style.borderColor=COLORS[v];
+      cell.style.boxShadow=`0 0 6px ${COLORS[v]}44`;
+    }
+    cell.onclick=()=>cellClick(r,c);
+    cell.onmouseenter=()=>hoverCell(r,c,true);
+    cell.onmouseleave=()=>hoverCell(r,c,false);
+    g.appendChild(cell);
+  }
+}
+
+function hoverCell(r,c,on){
+  if(!running||selected) return;
+  const v=grid[r][c];if(v===null) return;
+  const group=getGroup(r,c,v);
+  document.querySelectorAll('.cell').forEach(el=>el.classList.remove('hl'));
+  if(on&&group.length>=2) group.forEach(([gr,gc])=>{
+    const el=document.querySelector(`.cell[data-r="${gr}"][data-c="${gc}"]`);
+    if(el) el.classList.add('hl');
+  });
+}
+
+function cellClick(r,c){
+  if(!running) return;
+  if(selected){applyItem(selected,r,c);return;}
+  const v=grid[r][c];if(v===null) return;
+  const group=getGroup(r,c,v);
+  if(group.length<2){setMsg('Mind. 2 gleiche verbundene Blöcke!');return;}
+  group.forEach(([gr,gc])=>grid[gr][gc]=null);
+  const pts=group.length*group.length*10*(cheat&&cheat.code==='SUPERBLOCK'?3:1);
+  score+=pts;moves++;level=Math.floor(score/500)+1;
+  showCombo('+'+pts);
+  applyGravity();updateHUD();renderGrid();renderShop();
+  if(isOver()) setTimeout(endGame,400);
+  else setMsg(`+${pts} Punkte! ${group.length} Blöcke entfernt.`);
+}
+
+function getGroup(r,c,v){
+  const visited=new Set(),stack=[[r,c]],result=[];
+  while(stack.length){
+    const [cr,cc]=stack.pop();const key=cr+','+cc;
+    if(visited.has(key)) continue;
+    if(cr<0||cr>=ROWS||cc<0||cc>=COLS) continue;
+    if(grid[cr][cc]!==v) continue;
+    visited.add(key);result.push([cr,cc]);
+    [[cr-1,cc],[cr+1,cc],[cr,cc-1],[cr,cc+1]].forEach(n=>stack.push(n));
+  }
+  return result;
+}
+
+function applyGravity(){
+  for(let c=0;c<COLS;c++){
+    const col=[];
+    for(let r=ROWS-1;r>=0;r--) if(grid[r][c]!==null) col.push(grid[r][c]);
+    for(let r=ROWS-1;r>=0;r--) grid[r][c]=col.length>0?col[ROWS-1-r]??null:null;
+    const filled=[];
+    for(let r=0;r<ROWS;r++) if(grid[r][c]!==null) filled.push(grid[r][c]);
+    for(let r=0;r<ROWS;r++) grid[r][c]=r>=ROWS-filled.length?filled[r-(ROWS-filled.length)]:null;
+  }
+}
+
+function isOver(){
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    const v=grid[r][c];if(v===null) continue;
+    const nb=[[r-1,c],[r+1,c],[r,c-1],[r,c+1]];
+    if(nb.some(([nr,nc])=>nr>=0&&nr<ROWS&&nc>=0&&nc<COLS&&grid[nr][nc]===v)) return false;
+  }
+  return true;
+}
+
+function renderShop(){
+  const s=document.getElementById('shop');
+  s.innerHTML=ITEMS.map(item=>`
+    <div class="shop-item ${selected===item.id?'selected':''} ${score<item.cost?'cant-afford':''}" onclick="selectItem('${item.id}')">
+      <div class="shop-icon">${item.icon}</div>
+      <div class="shop-name">${item.name}</div>
+      <div class="shop-cost">🪙 ${item.cost}</div>
+    </div>`).join('');
+}
+
+function selectItem(id){
+  if(!running) return;
+  const item=ITEMS.find(i=>i.id===id);
+  if(score<item.cost){setMsg('Nicht genug Punkte!');return;}
+  selected=selected===id?null:id;
+  renderShop();
+  if(selected){
+    setMsg(`${item.icon} ${item.name} — Klicke auf ein Feld`);
+    document.querySelectorAll('.cell').forEach(el=>el.classList.add('bomb-hl'));
+  } else {
+    document.querySelectorAll('.cell').forEach(el=>el.classList.remove('bomb-hl'));
+    setMsg('Klicke auf gleiche Blöcke!');
+  }
+}
+
+function applyItem(type,r,c){
+  const item=ITEMS.find(i=>i.id===type);
+  score-=item.cost;
+  if(type==='bomb'){
+    for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++){
+      const nr=r+dr,nc=c+dc;if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLS) grid[nr][nc]=null;
+    }
+    setMsg('💣 Explosion!');
+  } else if(type==='row'){
+    for(let cc=0;cc<COLS;cc++) grid[r][cc]=null;
+    setMsg('↔ Reihe gelöscht!');
+  } else if(type==='col'){
+    for(let rr=0;rr<ROWS;rr++) grid[rr][c]=null;
+    setMsg('↕ Spalte gelöscht!');
+  } else if(type==='shuffle'){
+    const all=[];
+    for(let rr=0;rr<ROWS;rr++) for(let cc=0;cc<COLS;cc++) if(grid[rr][cc]!==null) all.push(grid[rr][cc]);
+    all.sort(()=>Math.random()-.5);let i=0;
+    for(let rr=0;rr<ROWS;rr++) for(let cc=0;cc<COLS;cc++) if(grid[rr][cc]!==null) grid[rr][cc]=all[i++];
+    setMsg('🔀 Feld neu gemischt!');
+  }
+  selected=null;moves++;
+  applyGravity();updateHUD();renderGrid();renderShop();
+  document.querySelectorAll('.cell').forEach(el=>el.classList.remove('bomb-hl'));
+  if(isOver()) setTimeout(endGame,400);
+}
+
+function updateHUD(){
+  document.getElementById('hScore').textContent=score;
+  document.getElementById('hLevel').textContent=level;
+  document.getElementById('hMoves').textContent=moves;
+}
+function setMsg(m){document.getElementById('msgBar').textContent=m;}
+
+function showCombo(txt){
+  const el=document.createElement('div');el.className='combo';el.textContent=txt;
+  document.body.appendChild(el);setTimeout(()=>el.remove(),900);
+}
+
+function endGame(){
+  running=false;setMsg(`GAME OVER — Score: ${score} Punkte`);
+  localStorage.setItem('bg_lastResult',JSON.stringify({game:'blockblast',score,title:'💣 BLOCK BLAST',cheat:!!cheat}));
+  if(user){localStorage.setItem('bg_sessionUser',JSON.stringify(user));localStorage.setItem('sg_sessionUser',JSON.stringify(user));}
+  setTimeout(()=>window.location.href='index.html',1200);
+}
+</script>
+</body>
+</html>
