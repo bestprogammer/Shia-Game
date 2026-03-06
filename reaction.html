@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reaction Test — Betschardt Games</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#03080f;--s1:#07111e;--blue:#1a6fff;--blue2:#4d9fff;--border:#1a3355;--text:#c8deff;--dim:#4a6a8a;--green:#22bb55;--red:#e03030;--gold:#f5c518;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Rajdhani',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;}
+header{width:100%;display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;height:52px;background:rgba(3,8,15,.96);border-bottom:1px solid var(--border);}
+.logo{font-family:'Orbitron',monospace;font-size:.95rem;font-weight:900;color:#fff;cursor:pointer;}
+.logo em{font-style:normal;color:var(--blue2);}
+.btn{font-family:'Orbitron',monospace;font-size:.58rem;font-weight:700;padding:.38rem .9rem;border:none;border-radius:5px;cursor:pointer;transition:all .18s;text-transform:uppercase;}
+.btn-blue{background:transparent;color:var(--blue2);border:2px solid var(--blue);}
+.btn-blue:hover{background:var(--blue);color:#fff;}
+.btn-green{background:var(--green);color:#fff;border:2px solid var(--green);}
+.game-area{width:660px;max-width:98vw;margin:1.5rem 0;}
+.arena{
+  width:100%;height:340px;border-radius:12px;border:2px solid var(--border);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  cursor:pointer;transition:background .2s;user-select:none;
+  background:var(--s1);
+}
+.arena.waiting{background:#200005;}
+.arena.go{background:#002a10;border-color:var(--green);}
+.arena-text{font-family:'Orbitron',monospace;font-size:2.2rem;font-weight:900;color:var(--blue2);}
+.arena.waiting .arena-text{color:var(--red);}
+.arena.go .arena-text{color:var(--green);text-shadow:0 0 30px rgba(34,187,85,.6);}
+.arena-sub{font-size:.9rem;color:var(--dim);margin-top:.5rem;}
+.results{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-top:1rem;}
+.result-chip{background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:.5rem 1rem;text-align:center;}
+.result-chip .val{font-family:'Orbitron',monospace;font-size:1.1rem;}
+.result-chip .lbl{font-size:.62rem;color:var(--dim);text-transform:uppercase;}
+.fast{color:var(--green);} .ok{color:var(--gold);} .slow{color:var(--red);}
+.btns{display:flex;gap:.6rem;justify-content:center;margin-top:1rem;}
+.progress{display:flex;gap:.4rem;margin:.8rem 0;justify-content:center;}
+.prog-dot{width:14px;height:14px;border-radius:50%;background:var(--border);border:1px solid var(--border);transition:all .2s;}
+.prog-dot.done{background:var(--blue);border-color:var(--blue2);}
+.prog-dot.active{background:var(--blue2);border-color:var(--blue2);box-shadow:0 0 8px var(--blue);}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo" onclick="goHome()">Betschardt <em>Games</em></div>
+  <div style="font-family:'Orbitron',monospace;font-size:.82rem;color:var(--blue2);">⚡ REACTION TEST</div>
+  <button class="btn btn-blue" onclick="goHome()">← Home</button>
+</header>
+
+<div class="game-area">
+  <div class="arena" id="arena" onclick="arenaClick()">
+    <div class="arena-text" id="arenaText">REACTION TEST</div>
+    <div class="arena-sub" id="arenaSub">Drücke START — 3 Versuche, Durchschnitt zählt</div>
+  </div>
+  <div class="progress" id="progress">
+    <div class="prog-dot" id="dot0"></div>
+    <div class="prog-dot" id="dot1"></div>
+    <div class="prog-dot" id="dot2"></div>
+  </div>
+  <div class="results" id="results"></div>
+  <div class="btns">
+    <button class="btn btn-green" id="startBtn" onclick="startGame()">▶ START</button>
+    <button class="btn btn-blue" onclick="goHome()">🏠 Home</button>
+  </div>
+</div>
+
+<script>
+const user=JSON.parse(localStorage.getItem('bg_currentUser')||'null');
+const cheat=JSON.parse(localStorage.getItem('bg_activeCheat')||'null');
+function goHome(){window.location.href='index.html';}
+document.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();arenaClick();}if(e.code==='Escape')goHome();});
+
+let state='idle',start=0,results=[],timer=null;
+
+function startGame(){
+  results=[];renderProgress();renderResults();
+  doWait();
+  document.getElementById('startBtn').textContent='⏳ Läuft...';
+  document.getElementById('startBtn').disabled=true;
+}
+
+function doWait(){
+  state='waiting';
+  const a=document.getElementById('arena');
+  a.className='arena waiting';
+  document.getElementById('arenaText').textContent='WARTEN...';
+  document.getElementById('arenaSub').textContent=`Versuch ${results.length+1} von 3`;
+  const d=1200+Math.random()*3500;
+  timer=setTimeout(()=>{
+    if(state!=='waiting') return;
+    state='go';start=Date.now();
+    a.className='arena go';
+    document.getElementById('arenaText').textContent='JETZT!';
+    document.getElementById('arenaSub').textContent='Klicken!';
+    document.getElementById('dot'+results.length).className='prog-dot active';
+  },d);
+}
+
+function arenaClick(){
+  if(state==='idle') return;
+  if(state==='waiting'){
+    clearTimeout(timer);
+    document.getElementById('arenaText').textContent='ZU FRÜH!';
+    document.getElementById('arenaSub').textContent='Warte auf JETZT!';
+    document.getElementById('arena').className='arena';
+    state='idle';
+    setTimeout(()=>{if(results.length<3) doWait();},1200);
+    return;
+  }
+  if(state==='go'){
+    const rt=Date.now()-start;
+    results.push(rt);
+    document.getElementById('dot'+( results.length-1)).className='prog-dot done';
+    renderResults();
+    document.getElementById('arena').className='arena';
+    document.getElementById('arenaText').textContent=`${rt} ms`;
+    const cls=rt<200?'fast':rt<350?'ok':'slow';
+    document.getElementById('arenaSub').textContent=rt<200?'⚡ Sehr schnell!':rt<350?'👍 Gut!':'🐢 Langsam...';
+    state='idle';
+    if(results.length<3){setTimeout(doWait,1400);}
+    else {
+      const avg=Math.round(results.reduce((a,b)=>a+b)/3);
+      document.getElementById('startBtn').textContent='▶ Nochmal';document.getElementById('startBtn').disabled=false;document.getElementById('startBtn').onclick=startGame;
+      document.getElementById('arenaText').textContent=`Ø ${avg} ms`;
+      document.getElementById('arenaSub').textContent='Fertig! Zurück zur Übersicht...';
+      localStorage.setItem('bg_lastResult',JSON.stringify({game:'reaction',score:avg,title:'⚡ REACTION ERGEBNIS',cheat:!!cheat}));
+      if(user) localStorage.setItem('bg_sessionUser',JSON.stringify(user));
+      setTimeout(()=>window.location.href='index.html',1800);
+    }
+  }
+}
+
+function renderProgress(){
+  for(let i=0;i<3;i++) document.getElementById('dot'+i).className='prog-dot';
+}
+
+function renderResults(){
+  const div=document.getElementById('results');
+  div.innerHTML=results.map((r,i)=>{
+    const cls=r<200?'fast':r<350?'ok':'slow';
+    return `<div class="result-chip"><div class="val ${cls}">${r} ms</div><div class="lbl">Versuch ${i+1}</div></div>`;
+  }).join('');
+  if(results.length===3){
+    const avg=Math.round(results.reduce((a,b)=>a+b)/3);
+    const cls=avg<200?'fast':avg<350?'ok':'slow';
+    div.innerHTML+=`<div class="result-chip"><div class="val ${cls}">${avg} ms</div><div class="lbl">Durchschnitt</div></div>`;
+  }
+}
+</script>
+</body>
+</html>
